@@ -87,4 +87,18 @@ for guard_id, minutes in guards.items():
         most_sleepy_guards_most_sleepy_minute = most_sleepy_minute
 
 id = int(most_sleepy_guard.replace("#", ""))
-print("part 1: ", most_sleepy_guard, most_sleepy_guards_most_sleepy_minute, id*most_sleepy_guards_most_sleepy_minute)
+print("part 1:", most_sleepy_guard, most_sleepy_guards_most_sleepy_minute, id*most_sleepy_guards_most_sleepy_minute)
+
+highest_sleep = 0
+best_minute = 0
+best_guard = 0
+
+for m in range(0, 60):
+    for guard_id, minutes in guards.items():
+        if minutes[m] > highest_sleep:
+            highest_sleep = minutes[m]
+            best_minute = m
+            best_guard = guard_id
+
+id = int(best_guard.replace("#", ""))
+print("part 2:", highest_sleep, best_minute, best_guard, best_minute*id)
