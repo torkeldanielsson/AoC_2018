@@ -25,9 +25,9 @@ for line in lines:
     nodes.add(d.step)
     nodes.add(d.enables)
 
-for d in deps:
-    print(d.step, d.enables)
-print("")
+#for d in deps:
+#    print(d.step, d.enables)
+#print("")
 
 graph = {}
 
@@ -38,32 +38,78 @@ for n in nodes:
             prereqs.append(d.step)
     graph[n] = prereqs
 
-for n, p in graph.items():
-    print(n, p)
-print("")
+#for n, p in graph.items():
+#    print(n, p)
+#print("")
 
 procedure = ""
 completed_steps = []
 
 allDone = False
 
+second = 0
+
+class Worker:
+    isWorking = False
+    task = " "
+    secondsLeft = 0
+
+workers = []
+for i in range(5):
+    workers.append(Worker())
+
+alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+baseTaskCost = 60
+
 while not allDone:
     allDone = True
+
+    for worker in workers:
+        if worker.isWorking:
+            worker.secondsLeft -= 1
+            if worker.secondsLeft <= 0:
+                worker.isWorking = False
+                completed_steps.append(worker.task)
+                worker.task = " "
+                procedure += worker.task
 
     possibleNextSteps = []
 
     for n, p in graph.items():
-        print(n, p)
+        #print(n, p)
         if n in completed_steps:
             continue
+        allDone = False
+        isBeingWorkedOn = False
+        for worker in workers:
+            if worker.task == n:
+                isBeingWorkedOn = True
+        if isBeingWorkedOn:
+            continue
         if set(p).issubset(set(completed_steps)):
-            allDone = False
             possibleNextSteps.append(n)
 
     possibleNextSteps.sort()
 
-    if len(possibleNextSteps) > 0:
-        procedure += possibleNextSteps[0]
-        completed_steps.append(possibleNextSteps[0])
+    for worker in workers:
+        if len(possibleNextSteps) > 0:
+            if not worker.isWorking:
+                worker.isWorking = True
+                worker.task = possibleNextSteps[0]
+                del possibleNextSteps[0]
+                worker.secondsLeft = baseTaskCost + 1 + alphabet.find(worker.task)
+                #print(worker.task, alphabet, "location:", alphabet.find(worker.task), worker.secondsLeft)
 
-print(procedure)
+    taskString = ""
+    for worker in workers:
+        taskString += worker.task + " "
+
+    print("second", second, taskString, completed_steps)
+
+    if not allDone:
+        second += 1
+
+print("procedure", procedure)
+
+print("seconds:", second)
