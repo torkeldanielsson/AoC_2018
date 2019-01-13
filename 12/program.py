@@ -34,12 +34,14 @@ rules = ["#..#.",
          ".##.#", ]
 
 
-board = "....................#...#..##.......####.#..###..#.##..########.#.#...#.#...###.#..###.###.#.#..#...#.#..##..#######.##................................................................"
-offset = -20
+board = "..........#...#..##.......####.#..###..#.##..########.#.#...#.#...###.#..###.###.#.#..#...#.#..##..#######.##..................................................................................................................................................................................................................."
+offset = -10
 
-print(" 0: " + board)
+#print(" 0: " + board)
 
-for generation in range(20):
+last_score = 0
+
+for generation in range(100):
     next_board = ".."
 
     for i in range(len(board) - 2):
@@ -58,12 +60,14 @@ for generation in range(20):
     padding = ""
     if generation < 9:
         padding = " "
-    print(padding + str(generation + 1) + ": " + board)
+    #print(padding + str(generation + 1) + ": " + board)
 
-res = 0
+    res = 0
 
-for i, c in enumerate(board):
-    if c == "#":
-        res += offset + i
+    for i, c in enumerate(board):
+        if c == "#":
+            res += offset + i
 
-print(res)
+    print(str(generation+1) + ": " + str(res) + ", diff: " + str(res - last_score))
+
+    last_score = res
