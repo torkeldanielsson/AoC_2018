@@ -1,5 +1,9 @@
-#part 1
-tests = [(9, "5158916779"), (5, "0124515891"), (18, "9251071085"), (2018, "5941429882"), (760221, "1411383621")]
+#part 2
+tests = [("51589", 9), 
+         ("01245", 5), 
+         ("92510", 18),
+         ("59414", 2018),
+         ("760221", 0)]
 
 def print_board(board, positions):
     board_str = ""
@@ -15,11 +19,16 @@ def print_board(board, positions):
 for test_nr, (t, res) in enumerate(tests):
     board = [3, 7]
     positions = [0, 1]
-    #print("\nTurns: ", t)
+
+    test_list = []
+    for c in t:
+        test_list.append(int(c))
+
+    done = False
+
+    count = 2
     
-    #print_board(board, positions)
-    
-    while len(board) < (t + 10):
+    while not done:
         
         sum = 0
 
@@ -28,14 +37,14 @@ for test_nr, (t, res) in enumerate(tests):
         sumstr = str(sum)
         for c in sumstr:
             board.append(int(c))
+            count += 1
+
+            if board[-(len(test_list)+1):-1] == test_list:
+                done = True
+                pos_before = count - len(test_list) - 1
+                print(t, pos_before, res, res == pos_before)
+                print(board[-(len(test_list)+1):-1])
+                print(test_list)
 
         for i, p in enumerate(positions):
             positions[i] = (p + board[p] + 1) % len(board)
-
-        #print_board(board, positions)
-
-    myres = ""
-    reslist = board[t:t+10]
-    for r in reslist:
-        myres += str(r)
-    print(t, len(board), res, myres, res == myres)
