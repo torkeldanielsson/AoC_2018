@@ -11,6 +11,13 @@ class Cart:
     pos = (0, 0)
     direction = 0 # up down left right
     next_turn = 0 # left straight right
+    prev_pos = (0, 0)
+    has_collided = False
+
+    def __lt__(self, other):
+        if self.pos[1] == other.pos[1]:
+            return self.pos[0] < other.pos[0]
+        return self.pos[1] < other.pos[1]
 
 board = []
 carts = []
@@ -25,10 +32,18 @@ def direction_str(direction):
     if direction == 3:
         return ">"
 
-def print_board(board, carts):
+def print_board(board, carts, cx, cy):
     for y, l in enumerate(board):
+
+        if cy >= 0 and (y-2>cy or y+2<cy):
+            continue
+
         line = ""
         for x, c in enumerate(l):
+
+            if cx >= 0 and (x-2>cx or x+2<cx):
+                continue
+        
             is_cart = False
             collision = False
             cart_symbol = "X"
@@ -78,15 +93,37 @@ for y, line in enumerate(lines):
             board_line.append(c)
     board.append(board_line)
 
-print_board(board, carts)
-print("")
+#print_board(board, carts, -1, -1)
+#print("")
 
-collision_has_happened = False
+cart_to_follow = -1
 
-while not collision_has_happened:
+while len(carts) > 1:
+
+    collision_carts = []
+
+    # sort carts
+    #print("\n pre sort")
+
+    #for c in carts:
+    #    print("cart " + str(c.pos[0]) + " " + str(c.pos[1]))
+
+    carts.sort()
+    #print("\nsort")
+
+    #for c in carts:
+    #    print("cart " + str(c.pos[0]) + " " + str(c.pos[1]))
+    #print("\n POST sort\n\n")
 
     # move
     for i, cart in enumerate(carts):
+
+        if i == cart_to_follow:
+            print("")
+            print_board(board, carts, cart.pos[0], cart.pos[1])
+
+        if cart.has_collided:
+            continue
 
         cx = cart.pos[0]
         cy = cart.pos[1]
@@ -99,13 +136,17 @@ while not collision_has_happened:
             cx -= 1
         if cart.direction == 3: # right
             cx += 1
-    
+                
+        cart.pos = (cx, cy)
+
         # collision
         for j, cart2 in enumerate(carts):
             if i != j and cart.pos == cart2.pos:
-                print_board(board, carts)
-                print("COLLISION", cart.pos)
-                collision_has_happened = True
+                print("COLLISION", cart.pos, i, j)
+                collision_carts.append(i)
+                collision_carts.append(j)
+                cart.has_collided = True
+                cart2.has_collided = True
 
         # turn
         p = board[cy][cx]
@@ -129,20 +170,6 @@ while not collision_has_happened:
             cart.direction = 1
         
         if p == "+":
-            p_up = "x"
-            p_down = "x"
-            p_left = "x"
-            p_right = "x"
-
-            if 0 <= cy - 1 and len(board[cy - 1]) > cx:
-                p_up = board[cy - 1][cx]
-            if len(board) > cy + 1 and len(board[cy + 1]) > cx:
-                p_down = board[cy + 1][cx]
-            if len(board[cy]) > cx + 1:
-                p_right = board[cy][cx + 1]
-            if 0 <= cx - 1:
-                p_left = board[cy][cx - 1]
-
             if cart.direction == 0: # heading up
                 if cart.next_turn == 0: # next left
                     cart.direction = 2
@@ -170,6 +197,16 @@ while not collision_has_happened:
                 cart.next_turn = 2
             elif cart.next_turn == 2: # next right
                 cart.next_turn = 0
-            
-        cart.pos = (cx, cy)
+    
+    collision_carts = sorted(collision_carts, reverse=True)
 
+    #print_board(board, carts)
+
+    #print(collision_carts)
+
+    for c in collision_carts:
+        del carts[c]
+    
+    #print_board(board, carts)
+
+print(carts[0].pos)
