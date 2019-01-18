@@ -16,7 +16,7 @@ class Unit:
             return self.pos.real < other.pos.real
         return self.pos.imag < other.pos.imag
 
-def print_map():
+def print_map(free_space, units, width, height):
     for y in range(height):
         row_str = ""
         unit_str = " "
@@ -39,7 +39,7 @@ def print_map():
                     row_str += "."
         print(row_str + unit_str)
 
-def make_move_map(pos, units):
+def make_move_map(pos, units, free_space, width, height):
     move_map = {}
     for y in range(height):
         for x in range(width):
@@ -69,7 +69,7 @@ def make_move_map(pos, units):
         next_dist += 1
     return move_map
 
-def print_move_map(move_map):
+def print_move_map(move_map, free_space, width, height):
     for y in range(height):
         row_str = ""
         for x in range(width):
@@ -84,18 +84,9 @@ def print_move_map(move_map):
                 print("error")
         print(row_str)
 
-all_tests_pass = True
+def parse_file(filename):
 
-tests = [("test_2.txt", 27730), 
-         ("test_3.txt", 36334), 
-         ("test_4.txt", 39514), 
-         ("test_5.txt", 27755), 
-         ("test_6.txt", 28944), 
-         ("test_7.txt", 18740)]
-
-for test in tests:
-
-    f = open(test[0], "r")
+    f = open(filename, "r")
     lines = f.readlines()
     f.close()
 
@@ -120,8 +111,27 @@ for test in tests:
                 last_id += 1
                 units.append(unit)
 
+    return free_space, units, width, height
+
+
+all_tests_pass = True
+
+tests = [("test_2.txt", 27730), 
+         ("test_3.txt", 36334), 
+         ("test_4.txt", 39514), 
+         ("test_5.txt", 27755), 
+         ("test_6.txt", 28944), 
+         ("test_7.txt", 18740), 
+         ("input.txt", 204844)]
+
+#tests = [("move_test.txt", 0)]
+
+for test in tests:
+
+    free_space, units, width, height = parse_file(test[0])
+
     # print("Initially:")
-    # print_map()
+    # print_map(free_space, units, width, height)
 
     round = 0
     done = False
@@ -135,6 +145,8 @@ for test in tests:
         for unit in units:
             id_list.append(unit.id)
 
+        combat_over = False
+
         for id in id_list:
 
             unit = 0
@@ -144,7 +156,17 @@ for test in tests:
             if unit == 0:
                 continue
 
-            # move
+            # test if enemies are left
+
+            no_enemies = True
+            for i, enemy in enumerate(units):
+                if enemy.isElf != unit.isElf:
+                    no_enemies = False
+            if no_enemies:
+                combat_over = True
+                break
+
+            # test if enemies are near
 
             can_attack = False
             for n in neighbors:
@@ -153,15 +175,21 @@ for test in tests:
                         if enemy.pos == unit.pos + n:
                             can_attack = True
 
+            # move
+
             if not can_attack:
-                move_map = make_move_map(unit.pos, units)
+                move_map = make_move_map(unit.pos, units, free_space, width, height)
+
+                # print("")
+                # print_map(free_space, units, width, height)
+                # print_move_map(move_map, free_space, width, height)
 
                 best_target = 0
                 best_target_score = bignum
 
-                for n in neighbors:
-                    for enemy in units:
-                        if enemy.isElf != unit.isElf:
+                for enemy in units:
+                    if enemy.isElf != unit.isElf:
+                        for n in neighbors:
                             neighbor = enemy.pos + n
                             if neighbor in move_map and move_map[neighbor] != -1 and move_map[neighbor] < best_target_score:
                                 best_target = neighbor
@@ -169,7 +197,9 @@ for test in tests:
 
                 if best_target_score != bignum:
 
-                    target_move_map = make_move_map(best_target, units)
+                    target_move_map = make_move_map(best_target, units, free_space, width, height)
+
+                    # print_move_map(target_move_map, free_space, width, height)
 
                     best_next_move = 0
                     best_next_move_score = bignum
@@ -201,16 +231,14 @@ for test in tests:
                 if units[best_target_i].hp <= 0:
                     del units[best_target_i]
 
+        if not combat_over:
+            round += 1
+
         done = True
         for u1 in units:
             for u2 in units:
                 if u1 != u2 and u1.isElf != u2.isElf:
                     done = False
-        
-        if done:
-            break
-
-        round += 1
 
     hp_sum = 0
     for unit in units:
@@ -218,7 +246,7 @@ for test in tests:
     outcome = hp_sum * round
 
     print("\nAfter", round, "rounds:")
-    print_map()
+    #print_map(free_space, units, width, height)
     print("Outcome:", outcome, "hp_sum:", hp_sum)
 
     if outcome != test[1]:
