@@ -1,14 +1,17 @@
 import sys
 
-f = open("test_2.txt", "r")
+f = open("input.txt", "r")
 lines = f.readlines()
 f.close()
+
+last_id = 0
 
 class Unit:
     isElf = True
     hp = 200
     ap = 3
     pos = 0 + 0j
+    id = -1
 
     def __lt__(self, other):
         if self.pos.imag == other.pos.imag:
@@ -31,6 +34,8 @@ for y, row in enumerate(lines):
             unit = Unit()
             unit.isElf = c == "E"
             unit.pos = loc
+            unit.id = last_id
+            last_id += 1
             units.append(unit)
 
 def print_map():
@@ -47,13 +52,13 @@ def print_map():
                     if unit.isElf:
                         unit_desc = "E"
                     row_str += unit_desc
-                    unit_str += unit_desc + str(unit.hp) + ", "
+                    unit_str += unit_desc + "(" + str(unit.hp) + "), "
 
             if not isUnit:
                 if loc not in free_space:
                     row_str += "#"
                 else:
-                    row_str += " "
+                    row_str += "."
         print(row_str + unit_str)
 
 def make_move_map(pos, units):
@@ -106,14 +111,28 @@ bignum = 9999999999
 print("Initially:")
 print_map()
 
-for round in range(24):
+round = 0
+done = False
+
+while not done:
 
     # sort
     units.sort()
 
-    # move and fight
-
+    id_list = []
     for unit in units:
+        id_list.append(unit.id)
+
+    for id in id_list:
+
+        unit = 0
+        for u in units:
+            if u.id == id:
+                unit = u
+        if unit == 0:
+            continue
+
+        # move
 
         can_attack = False
         for n in neighbors:
@@ -122,17 +141,15 @@ for round in range(24):
                     if enemy.pos == unit.pos + n:
                         can_attack = True
 
-        print(unit.pos, can_attack, unit.isElf)
-
         if not can_attack:
             move_map = make_move_map(unit.pos, units)
 
             best_target = 0
             best_target_score = bignum
 
-            for enemy in units:
-                if enemy.isElf != unit.isElf:
-                    for n in neighbors:
+            for n in neighbors:
+                for enemy in units:
+                    if enemy.isElf != unit.isElf:
                         neighbor = enemy.pos + n
                         if neighbor in move_map and move_map[neighbor] != -1 and move_map[neighbor] < best_target_score:
                             best_target = neighbor
@@ -172,5 +189,21 @@ for round in range(24):
             if units[best_target_i].hp <= 0:
                 del units[best_target_i]
 
-    print("\nAfter", round+1, "rounds:")
-    print_map()
+    done = True
+    for u1 in units:
+        for u2 in units:
+            if u1 != u2 and u1.isElf != u2.isElf:
+                done = False
+    
+    if done:
+        break
+
+    round += 1
+
+hp_sum = 0
+for unit in units:
+    hp_sum += unit.hp
+
+print("\nAfter", round, "rounds:")
+print_map()
+print("Outcome:", hp_sum*round)
