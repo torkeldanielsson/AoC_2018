@@ -177,6 +177,43 @@ for example in examples:
 
     possible_ops[opcode] = possible_for_this
 
-print(behaves_like_three)
-print(len(examples))
-print(possible_ops)
+knows_all = False
+
+while not knows_all:
+    resolved_codes = []
+    for code1 in possible_ops.keys():
+        possible = possible_ops[code1]
+        if len(possible) == 1:
+            correct_code = possible[0]
+            for code2 in possible_ops.keys():
+                if code1 != code2 and correct_code in possible_ops[code2]:
+                    possible_ops[code2].remove(correct_code)
+    
+    knows_all = True
+    for code1 in possible_ops.keys():
+        if len(possible_ops[code1]) != 1:
+            knows_all = False
+
+for code in possible_ops.keys():
+    print(code, possible_ops[code])
+
+f = open("input_2.txt", "r")
+lines = f.readlines()
+f.close()
+
+program_data = []
+
+for line in lines:
+    if line.strip() != "":
+        program_data_line = list(map(int, (line.strip().split(" "))))
+        program_data.append(program_data_line)
+
+for i in range(4):
+    reg[i] = 0
+
+for d in program_data:
+    opcode = d[0]
+    opcode_index = possible_ops[opcode][0]
+    instructions[opcode_index](d[1], d[2], d[3])
+
+print(reg[0])
