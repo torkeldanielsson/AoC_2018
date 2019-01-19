@@ -116,142 +116,154 @@ def parse_file(filename):
 
 all_tests_pass = True
 
-tests = [("test_2.txt", 27730), 
-         ("test_3.txt", 36334), 
-         ("test_4.txt", 39514), 
-         ("test_5.txt", 27755), 
-         ("test_6.txt", 28944), 
-         ("test_7.txt", 18740), 
-         ("input.txt", 204844)]
+tests = [("test_2.txt", 15,  4988), 
+         ("test_4.txt",  4, 31284), 
+         ("test_5.txt", 15,  3478), 
+         ("test_6.txt", 12,  6474), 
+         ("test_7.txt", 34,  1140), 
+         ("input.txt",  10, 69867)]
 
 #tests = [("move_test.txt", 0)]
 
 for test in tests:
 
-    free_space, units, width, height = parse_file(test[0])
+    all_elves_lives = False
+    elf_ap = 3
 
-    # print("Initially:")
-    # print_map(free_space, units, width, height)
+    while not all_elves_lives:
 
-    round = 0
-    done = False
+        elf_ap += 1
+        all_elves_lives = True
 
-    while not done:
+        free_space, units, width, height = parse_file(test[0])
 
-        # sort
-        units.sort()
-
-        id_list = []
         for unit in units:
-            id_list.append(unit.id)
+            if unit.isElf:
+                unit.ap = elf_ap
 
-        combat_over = False
+        round = 0
+        done = False
 
-        for id in id_list:
+        while not done and all_elves_lives:
 
-            unit = 0
-            for u in units:
-                if u.id == id:
-                    unit = u
-            if unit == 0:
-                continue
+            # sort
+            units.sort()
 
-            # test if enemies are left
+            id_list = []
+            for unit in units:
+                id_list.append(unit.id)
 
-            no_enemies = True
-            for i, enemy in enumerate(units):
-                if enemy.isElf != unit.isElf:
-                    no_enemies = False
-            if no_enemies:
-                combat_over = True
-                break
+            combat_over = False
 
-            # test if enemies are near
+            for id in id_list:
 
-            can_attack = False
-            for n in neighbors:
+                unit = 0
+                for u in units:
+                    if u.id == id:
+                        unit = u
+                if unit == 0:
+                    continue
+
+                # test if enemies are left
+
+                no_enemies = True
                 for i, enemy in enumerate(units):
                     if enemy.isElf != unit.isElf:
-                        if enemy.pos == unit.pos + n:
-                            can_attack = True
+                        no_enemies = False
+                if no_enemies:
+                    combat_over = True
+                    break
 
-            # move
+                # test if enemies are near
 
-            if not can_attack:
-                move_map = make_move_map(unit.pos, units, free_space, width, height)
+                can_attack = False
+                for n in neighbors:
+                    for i, enemy in enumerate(units):
+                        if enemy.isElf != unit.isElf:
+                            if enemy.pos == unit.pos + n:
+                                can_attack = True
 
-                # print("")
-                # print_map(free_space, units, width, height)
-                # print_move_map(move_map, free_space, width, height)
+                # move
 
-                best_target = 0
-                best_target_score = bignum
+                if not can_attack:
+                    move_map = make_move_map(unit.pos, units, free_space, width, height)
 
-                for enemy in units:
-                    if enemy.isElf != unit.isElf:
+                    # print("")
+                    # print_map(free_space, units, width, height)
+                    # print_move_map(move_map, free_space, width, height)
+
+                    best_target = 0
+                    best_target_score = bignum
+
+                    for enemy in units:
+                        if enemy.isElf != unit.isElf:
+                            for n in neighbors:
+                                neighbor = enemy.pos + n
+                                if neighbor in move_map and move_map[neighbor] != -1 and move_map[neighbor] < best_target_score:
+                                    best_target = neighbor
+                                    best_target_score = move_map[neighbor]
+
+                    if best_target_score != bignum:
+
+                        target_move_map = make_move_map(best_target, units, free_space, width, height)
+
+                        # print_move_map(target_move_map, free_space, width, height)
+
+                        best_next_move = 0
+                        best_next_move_score = bignum
+
                         for n in neighbors:
-                            neighbor = enemy.pos + n
-                            if neighbor in move_map and move_map[neighbor] != -1 and move_map[neighbor] < best_target_score:
-                                best_target = neighbor
-                                best_target_score = move_map[neighbor]
+                            neighbor = unit.pos + n
+                            if (neighbor in target_move_map) and (target_move_map[neighbor] != -1) and (target_move_map[neighbor] < best_next_move_score):
+                                best_next_move = neighbor
+                                best_next_move_score = target_move_map[neighbor]
+                        
+                        if best_next_move != 0:
+                            unit.pos = best_next_move
 
-                if best_target_score != bignum:
+                # attack 
 
-                    target_move_map = make_move_map(best_target, units, free_space, width, height)
+                attack = False
+                best_target_i = 0
+                best_hp = bignum
+                for n in neighbors:
+                    for i, enemy in enumerate(units):
+                        if enemy.isElf != unit.isElf:
+                            if enemy.pos == unit.pos + n:
+                                if enemy.hp < best_hp:
+                                    attack = True
+                                    best_target_i = i
+                                    best_hp = enemy.hp
+                if attack:
+                    units[best_target_i].hp -= unit.ap
+                    if units[best_target_i].hp <= 0:
+                        if units[best_target_i].isElf:
+                            all_elves_lives = False
+                        del units[best_target_i]
 
-                    # print_move_map(target_move_map, free_space, width, height)
+            if not combat_over:
+                round += 1
 
-                    best_next_move = 0
-                    best_next_move_score = bignum
+            done = True
+            for u1 in units:
+                for u2 in units:
+                    if u1 != u2 and u1.isElf != u2.isElf:
+                        done = False
 
-                    for n in neighbors:
-                        neighbor = unit.pos + n
-                        if (neighbor in target_move_map) and (target_move_map[neighbor] != -1) and (target_move_map[neighbor] < best_next_move_score):
-                            best_next_move = neighbor
-                            best_next_move_score = target_move_map[neighbor]
-                    
-                    if best_next_move != 0:
-                        unit.pos = best_next_move
+        if all_elves_lives:
+            hp_sum = 0
+            for unit in units:
+                hp_sum += unit.hp
+            outcome = hp_sum * round
 
-            # attack 
+            print("\nAfter", round, "rounds:")
+            print("Elf AP: ", elf_ap)
+            #print_map(free_space, units, width, height)
+            print("Outcome:", outcome, "hp_sum:", hp_sum)
 
-            attack = False
-            best_target_i = 0
-            best_hp = bignum
-            for n in neighbors:
-                for i, enemy in enumerate(units):
-                    if enemy.isElf != unit.isElf:
-                        if enemy.pos == unit.pos + n:
-                            if enemy.hp < best_hp:
-                                attack = True
-                                best_target_i = i
-                                best_hp = enemy.hp
-            if attack:
-                units[best_target_i].hp -= unit.ap
-                if units[best_target_i].hp <= 0:
-                    del units[best_target_i]
-
-        if not combat_over:
-            round += 1
-
-        done = True
-        for u1 in units:
-            for u2 in units:
-                if u1 != u2 and u1.isElf != u2.isElf:
-                    done = False
-
-    hp_sum = 0
-    for unit in units:
-        hp_sum += unit.hp
-    outcome = hp_sum * round
-
-    print("\nAfter", round, "rounds:")
-    #print_map(free_space, units, width, height)
-    print("Outcome:", outcome, "hp_sum:", hp_sum)
-
-    if outcome != test[1]:
-        all_tests_pass = False
-        print("FAIL")
+            if elf_ap != test[1] or outcome != test[2]:
+                all_tests_pass = False
+                print("FAIL")
 
 print("")
 print("All tests passed:", all_tests_pass)
