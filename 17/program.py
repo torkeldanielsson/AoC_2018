@@ -1,6 +1,6 @@
 import sys
 
-f = open("test.txt", "r")
+f = open("input.txt", "r")
 lines = f.read().splitlines()
 f.close()
 
@@ -11,13 +11,14 @@ ymax = -99999
 
 def set_maxmin(x, y):
     global xmin, xmax, ymin, ymax
-    xmin = min(xmin, x)
-    xmax = max(xmax, x)
+    xmin = min(xmin, x - 20)
+    xmax = max(xmax, x + 20)
     ymin = min(ymin, y)
     ymax = max(ymax, y)
 
 def printmap(map):
     water_count = 0
+    retained_count = 0
     for y in range(ymin, ymax + 1):
         rowstr = ""
         for x in range(xmin, xmax + 1):
@@ -26,10 +27,13 @@ def printmap(map):
                 rowstr += map[loc]
                 if map[loc] == '|' or map[loc] == '~':
                     water_count += 1
+                if map[loc] == '~':
+                    retained_count += 1
             else:
                 rowstr += "."
         print(rowstr)
     print("water count", water_count)
+    print("retained count", retained_count)
 
 map = {}
 map[500] = '+'
@@ -61,13 +65,26 @@ for y in range(ymin - 10, ymax + 10):
         if loc not in map:
             map[loc] = '.'
 
-printmap(map)
+# printmap(map)
 
 done = False
 
-neighbors = [-1j, -1, 1, 1j]
+neighbors = [-1, 1, 1j]
 
-def flow_on_loc(loc, map, possible_next_locs):
+possible_flow_locs = set()
+flow_locs = []
+
+def flow_on_loc(loc):
+    global xmin, xmax, ymin, ymax
+    x = loc.real
+    y = loc.imag
+    if x > xmax + 8 or x < xmin -8 or y > ymax + 8 or y < ymin - 8:
+        return False
+    global map, possible_flow_locs
+    
+    #print("")
+    #printmap(map)
+    
     did_flow = False
     if map[loc] == '.':
         above = map[loc - 1j]
@@ -88,62 +105,62 @@ def flow_on_loc(loc, map, possible_next_locs):
         if flow:
             did_flow = True
             map[loc] = '|'
+            flow_locs.append(loc)
             for neighbor in neighbors:
-                possible_next_locs.append(loc + neighbor)
+                if not flow_on_loc(loc + neighbor):
+                    possible_flow_locs.add(loc + neighbor)
     return did_flow
 
 print_count = 0
 
+flow_on_loc(500+ 1j)
+
 while not done:
-    did_flow = False
 
-    possible_next_locs = []
-
-    for y in range(ymin - 9, ymax + 9):
-        for x in range(xmin - 9, xmax + 9):
-            loc = x + y*1j
-            if flow_on_loc(loc, map, possible_next_locs):
+    did_flow = True
+    
+    while did_flow:
+        did_flow = False
+        bad_locs = []
+        for loc in possible_flow_locs:
+            if map[loc] != '.':
+                bad_locs.append(loc)
+        for b_loc in bad_locs:
+            possible_flow_locs.remove(b_loc)
+        possible_flow_locs_copy = possible_flow_locs.copy()
+        for loc in possible_flow_locs_copy:
+            if flow_on_loc(loc):
                 did_flow = True
-
-    inner_did_flow = True
-    while inner_did_flow:
-        inner_did_flow = False
-        next_possible_next_locs = []
-        for low in possible_next_locs:
-            if flow_on_loc(loc, map, possible_next_locs):
-                inner_did_flow = True
-        possible_next_locs = next_possible_next_locs
 
     did_fill = False
 
-    if not did_flow:
-        for y in range(ymin, ymax):
-            possible_begin_fill = False
-            for x in range(xmin, xmax):
-                loc = x + y*1j
-                here = map[loc]
-                above = map[loc - 1j]
-                below = map[loc + 1j]
-                left = map[loc - 1]
-                right = map[loc + 1]
+    bad_flow_locs = []
+    for loc in flow_locs:
+        if map[loc] != '|':
+            bad_flow_locs.append(loc)
+    for b_f_loc in bad_flow_locs:
+        flow_locs.remove(b_f_loc)
 
-                if here == '|' and left == '#':
-                    possible_begin_fill = True
-                if possible_begin_fill and here == '|' and right == '#':
+    for loc in flow_locs:
+        if map[loc] == '|' and map[loc - 1] == '#':
+            possible_fill = True
+            sweep_loc = loc
+            while possible_fill:
+                if map[sweep_loc] == '|' and map[sweep_loc + 1] == '#':
                     did_fill = True
-                    itpos = loc
+                    itpos = sweep_loc
                     while map[itpos] == '|':
                         map[itpos] = '~'
                         itpos -= 1
-                if here != '|':
-                    possible_begin_fill = False
+                if map[sweep_loc] != '|':
+                    possible_fill = False
+                sweep_loc += 1
     
     if did_fill:
         print_count += 1
-        if print_count%20 == 0:
+        if print_count%5000 == 0:
             print("")
             printmap(map)
-            sys.stdout.flush()
 
     if not did_flow and not did_fill:
         done = True
