@@ -1,6 +1,6 @@
 import sys
 
-f = open("input.txt", "r")
+f = open("test.txt", "r")
 lines = f.read().splitlines()
 f.close()
 
@@ -11,8 +11,8 @@ ymax = -99999
 
 def set_maxmin(x, y):
     global xmin, xmax, ymin, ymax
-    xmin = min(xmin, x - 1)
-    xmax = max(xmax, x + 1)
+    xmin = min(xmin, x)
+    xmax = max(xmax, x)
     ymin = min(ymin, y)
     ymax = max(ymax, y)
 
@@ -65,36 +65,58 @@ printmap(map)
 
 done = False
 
+neighbors = [-1j, -1, 1, 1j]
+
+def flow_on_loc(loc, map, possible_next_locs):
+    did_flow = False
+    if map[loc] == '.':
+        above = map[loc - 1j]
+        below = map[loc + 1j]
+        left = map[loc - 1]
+        right = map[loc + 1]
+
+        flow = False
+        if above == '+' or above == '|':
+            flow = True
+        if below == '~' and (left == '|' or right == '|'):
+            flow = True
+        if left == '|' and (map[loc - 1 + 1j] == '#' or map[loc - 1 + 1j] == '~'):
+            flow = True
+        if right == '|' and (map[loc + 1 + 1j] == '#' or map[loc + 1 + 1j] == '~'):
+            flow = True
+        
+        if flow:
+            did_flow = True
+            map[loc] = '|'
+            for neighbor in neighbors:
+                possible_next_locs.append(loc + neighbor)
+    return did_flow
+
+print_count = 0
+
 while not done:
     did_flow = False
+
+    possible_next_locs = []
+
     for y in range(ymin - 9, ymax + 9):
         for x in range(xmin - 9, xmax + 9):
             loc = x + y*1j
-            if map[loc] == '.':
-                above = map[loc - 1j]
-                below = map[loc + 1j]
-                left = map[loc - 1]
-                right = map[loc + 1]
+            if flow_on_loc(loc, map, possible_next_locs):
+                did_flow = True
 
-                if above == '+' or above == '|':
-                    did_flow = True
-                    map[loc] = '|'
-                if (below == '#' or below == '~') and (left == '|' or right == '|'):
-                    did_flow = True
-                    map[loc] = '|'
-                if left == '|' and map[loc - 1 + 1j] == '#':
-                    did_flow = True
-                    map[loc] = '|'
-                if right == '|' and map[loc + 1 + 1j] == '#':
-                    did_flow = True
-                    map[loc] = '|'
+    inner_did_flow = True
+    while inner_did_flow:
+        inner_did_flow = False
+        next_possible_next_locs = []
+        for low in possible_next_locs:
+            if flow_on_loc(loc, map, possible_next_locs):
+                inner_did_flow = True
+        possible_next_locs = next_possible_next_locs
 
     did_fill = False
 
     if not did_flow:
-        print("")
-        printmap(map)
-        sys.stdout.flush()
         for y in range(ymin, ymax):
             possible_begin_fill = False
             for x in range(xmin, xmax):
@@ -116,9 +138,15 @@ while not done:
                 if here != '|':
                     possible_begin_fill = False
     
+    if did_fill:
+        print_count += 1
+        if print_count%20 == 0:
+            print("")
+            printmap(map)
+            sys.stdout.flush()
+
     if not did_flow and not did_fill:
         done = True
-
 
 print("")
 printmap(map)
